@@ -1,0 +1,114 @@
+---
+title: "QUANT MGMT Assignment 8"
+author: "Austin Salinas"
+date: "2025-10-22"
+output: html_document
+---
+
+```{r}
+library(Benchmarking)
+library(lpSolveAPI)
+library(ucminf)
+library(quadprog)
+if (!require(knitr)) {
+  library(knitr)
+}
+
+data <- data.frame(
+  DMU = c("Facility", "Facility 2", "Facility 3", 
+          "Facility 4", "Facility 5", "Facility 6"),
+  Staff_Hours_Per_Day = c(150, 400, 320, 520, 350, 320),
+  Supplies_Per_Day = c(.2, .7, 1.2, 2, 1.2, .7),
+  Reimbursed_Patient_Days = c(14000, 14000, 42000, 28000, 19000, 14000),
+  Privately_Paid_Patient_Days = c(3500, 21000, 10500, 42000, 25000, 15000)
+)
+
+kable(data, format = "pandoc", caption = "Hope Valley Health Care Association")
+
+x <- matrix(c(150, 400, 320, 520, 350, 320,
+              .2, .7, 1.2, 2, 1.2, .7), ncol = 2)
+y <- matrix(c(14000, 14000, 42000, 28000, 19000, 14000,
+              3500, 21000, 10500, 42000, 25000, 15000), ncol = 2)
+
+colnames(y) <- c("Privately paid patient-days", "Reimbursed Patient Days")
+colnames(x) <- c("Staff Hours Per Day", "Supplies Per Day")
+
+## Question 1: Formulate and perform DEA analysis under all DEA assumptions of FDH, CRS, VRS, IRS, DRS, and FRH.
+
+crs <- dea(x, y, RTS = "crs")
+vrs <- dea(x, y, RTS = "vrs")
+fdh <- dea(x, y, RTS = "fdh")
+irs <- dea(x, y, RTS = "irs")
+drs <- dea(x, y, RTS = "drs")
+frh <- dea(x, y, RTS = "add")
+
+## Question 2: Determine the Peers and Lambdas under each of the above assumptions.
+
+peers(crs)
+lambda(crs)
+
+peers(vrs)
+lambda(vrs)
+
+peers(fdh)
+lambda(fdh)
+
+peers(irs)
+lambda(irs)
+
+peers(drs)
+lambda(drs)
+
+peers(frh)
+lambda(frh)
+
+## Question 3: Summarize your results in a tabular format
+
+summary_results <- data.frame(
+  Facility = character(),
+  CRS_Efficiency = numeric(),
+  VRS_Efficiency = numeric(),
+  FDH_Efficiency = numeric(),
+  IRS_Efficiency = numeric(),
+  DRS_Efficiency = numeric(),
+  FRH_Efficiency = numeric(),
+  CRS_Peers = character(),
+  VRS_Peers = character(),
+  FDH_Peers = character(),
+  IRS_Peers = character(),
+  DRS_Peers = character(),
+  FRH_Peers = character(),
+  stringsAsFactors = FALSE
+)
+
+for (i in 1:nrow(x)) {  
+  summary_results <- rbind(summary_results, data.frame(
+    Facility = paste("Facility", i),
+    CRS_Efficiency = crs$eff[i],  
+    VRS_Efficiency = vrs$eff[i], 
+    FDH_Efficiency = fdh$eff[i],  
+    IRS_Efficiency = irs$eff[i],  
+    DRS_Efficiency = drs$eff[i],  
+    FRH_Efficiency = frh$eff[i],  
+    CRS_Peers = paste(which(crs$lambda[i,] > 0), collapse = ", "),
+    VRS_Peers = paste(which(vrs$lambda[i,] > 0), collapse = ", "),
+    FDH_Peers = paste(which(fdh$lambda[i,] > 0), collapse = ", "),
+    IRS_Peers = paste(which(irs$lambda[i,] > 0), collapse = ", "),
+    DRS_Peers = paste(which(drs$lambda[i,] > 0), collapse = ", "),
+    FRH_Peers = paste(which(frh$lambda[i,] > 0), collapse = ", "),
+    stringsAsFactors = FALSE
+  ))
+}
+
+print(summary_results)
+
+# Question 4: COmpare and contrast the above results
+
+dea.plot(x, y, RTS = "fdh", main = "FDH vs FRH Frontier Comparison", 
+         col= "magenta", lty = 1)
+dea.plot(x, y, RTS = "add", add = TRUE,
+         col = "skyblue", lty = 2)
+
+points(x, type = "p", col = "black", pch = 16)
+```
+
