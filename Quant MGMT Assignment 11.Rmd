@@ -1,0 +1,84 @@
+---
+title: "QUANT MGMT Assignment 11"
+author: "Austin Salinas"
+date: "2025-11-11"
+output: html_document
+---
+
+```{r}
+library(lpSolveAPI)
+
+IP <- make.lp(0, 7)
+invisible(lp.control(IP, sense = "min", verbose = "neutral"))
+
+set.objfn(IP, c(775, 800, 800, 800, 800, 775, 750))
+
+req <- c(Sun=18, Mon=27, Tue=22, Wed=26, Thu=25, Fri=21, Sat=19)
+
+add.constraint(IP, c(0,1,1,1,1,1,0), ">=", req["Sun"])
+
+add.constraint(IP, c(0,0,1,1,1,1,1), ">=", req["Mon"])
+
+add.constraint(IP, c(1,0,0,1,1,1,1), ">=", req["Tue"])
+
+add.constraint(IP, c(1,1,0,0,1,1,1), ">=", req["Wed"])
+
+add.constraint(IP, c(1,1,1,0,0,1,1), ">=", req["Thu"])
+
+add.constraint(IP, c(1,1,1,1,0,0,1), ">=", req["Fri"])
+
+add.constraint(IP, c(1,1,1,1,1,0,0), ">=", req["Sat"])
+
+set.type(IP, 1:7, "integer")
+
+colnames <- c("Shift 1 (off Sun,Mon)",
+              "Shift 2 (off Mon,Tue)",
+              "Shift 3 (off Tue,Wed)",
+              "Shift 4 (off Wed,Thu)",
+              "Shift 5 (off Thu,Fri)",
+              "Shift 6 (off Fri,Sat)",
+              "Shift 7 (off Sat,Sun)")
+rownames <- names(req)
+dimnames(IP) <- list(rownames, colnames)
+
+status <- solve(IP)
+if (status != 0) stop("Solver did not find an optimal solution.")
+
+x <- get.variables(IP)
+names(x) <- colnames
+total_cost <- get.objective(IP)
+
+A <- rbind(
+  c(0,1,1,1,1,1,0),  
+  c(0,0,1,1,1,1,1),  
+  c(1,0,0,1,1,1,1),  
+  c(1,1,0,0,1,1,1), 
+  c(1,1,1,0,0,1,1),  
+  c(1,1,1,1,0,0,1),  
+  c(1,1,1,1,1,0,0)   
+)
+day_names <- c("Sun","Mon","Tue","Wed","Thu","Fri","Sat")
+
+available <- as.numeric(A %*% x)
+names(available) <- day_names
+
+report <- data.frame(
+  Day       = day_names,
+  Required  = as.integer(req[day_names]),
+  Available = as.integer(available),
+  Surplus   = as.integer(available - req[day_names])
+)
+
+cat("\n--- Solution Summary ---\n")
+cat(sprintf("Total weekly wage cost: $%s\n\n",
+            formatC(total_cost, format = "f", digits = 0, big.mark = ",")))
+
+cat("Optimal number of workers starting each shift:\n")
+print(x)
+
+cat("\nWorkers required vs. available per day:\n")
+print(report, row.names = FALSE)
+
+
+```
+The total weekly cost will be $25,675.
