@@ -1,0 +1,346 @@
+---
+title: "Final Assignment QUANT"
+author: "Austin Salinas"
+date: "2025-11-20"
+output: html_document
+---
+**** 1. Problem Formulation ****
+
+Decision Variables:
+x[i,d] = 1 if staff member i works on day d
+x[i,d] = 0 otherwise
+where i ∈ {P1–P4, E1–E8} and d ∈ {1,…,7}
+
+Objective Function:
+Minimize Total Weekly Cost =
+
+Paramedics (Mon–Fri @ $250, Sat–Sun @ $300):
+250xP1,1 + 250xP1,2 + 250xP1,3 + 250xP1,4 + 250xP1,5 + 300xP1,6 + 300xP1,7 +
+250xP2,1 + 250xP2,2 + 250xP2,3 + 250xP2,4 + 250xP2,5 + 300xP2,6 + 300xP2,7 +
+250xP3,1 + 250xP3,2 + 250xP3,3 + 250xP3,4 + 250xP3,5 + 300xP3,6 + 300xP3,7 +
+250xP4,1 + 250xP4,2 + 250xP4,3 + 250xP4,4 + 250xP4,5 + 300xP4,6 + 300xP4,7 +
+
+EMTs (Mon–Fri @ $180, Sat–Sun @ $220):
+180xE1,1 + 180xE1,2 + 180xE1,3 + 180xE1,4 + 180xE1,5 + 220xE1,6 + 220xE1,7 +
+180xE2,1 + 180xE2,2 + 180xE2,3 + 180xE2,4 + 180xE2,5 + 220xE2,6 + 220xE2,7 +
+180xE3,1 + 180xE3,2 + 180xE3,3 + 180xE3,4 + 180xE3,5 + 220xE3,6 + 220xE3,7 +
+180xE4,1 + 180xE4,2 + 180xE4,3 + 180xE4,4 + 180xE4,5 + 220xE4,6 + 220xE4,7 +
+180xE5,1 + 180xE5,2 + 180xE5,3 + 180xE5,4 + 180xE5,5 + 220xE5,6 + 220xE5,7 +
+180xE6,1 + 180xE6,2 + 180xE6,3 + 180xE6,4 + 180xE6,5 + 220xE6,6 + 220xE6,7 +
+180xE7,1 + 180xE7,2 + 180xE7,3 + 180xE7,4 + 180xE7,5 + 220xE7,6 + 220xE7,7 +
+180xE8,1 + 180xE8,2 + 180xE8,3 + 180xE8,4 + 180xE8,5 + 220xE8,6 + 220xE8,7
+
+Constraints:
+
+1. Minimum total staff each day:
+x[,1] ≥ 6
+x[,2] ≥ 6
+x[,3] ≥ 8
+x[,4] ≥ 8
+x[,5] ≥ 10
+x[,6] ≥ 8
+x[,7] ≥ 6
+
+2. Minimum paramedics each day:
+x[P,1] ≥ 2
+x[P,2] ≥ 2
+x[P,3] ≥ 3
+x[P,4] ≥ 3
+x[P,5] ≥ 4
+x[P,6] ≥ 3
+x[P,7] ≥ 2
+
+3. Weekly maximum workload:
+x[i,1] + x[i,2] + x[i,3] + x[i,4] + x[i,5] + x[i,6] + x[i,7] ≤ 5
+
+4. Rolling 5-day limit:
+x[i,1] + x[i,2] + x[i,3] + x[i,4] + x[i,5] ≤ 4
+x[i,2] + x[i,3] + x[i,4] + x[i,5] + x[i,6] ≤ 4
+x[i,3] + x[i,4] + x[i,5] + x[i,6] + x[i,7] ≤ 4
+
+5. Unavailability:
+x[P1,7] = 0
+x[P4,1] = 0
+x[P4,2] = 0
+x[E2,6] = 0
+x[E2,7] = 0
+x[E5,5] = 0
+
+6. Binary requirements:
+x[i,d] ∈ {0,1} for all staff and all days
+
+Constraint Matrix Structure:
+
+Number of variables:
+12 employees × 7 days = 84 variables
+
+Number of constraints:
+7 daily staffing minimums
+7 paramedic minimums
+12 weekly max-workload limits
+36 rolling 5-day window limits
+6 unavailability constraints
+Total = 68 model constraints (binary bounds handled separately)
+
+Matrix layout:
+Columns (1–84) correspond to:
+xP1,1 … xP1,7, xP2,1 … xP2,7, …, xE8,1 … xE8,7
+
+Row blocks:
+Rows 1–7: Daily staffing (12 ones in each row)
+Rows 8–14: Paramedic staffing (4 ones per row)
+Rows 15–26: Weekly workload limits (7 ones)
+Rows 27–62: Rolling windows (5 ones)
+Rows 63–68: Unavailability (single 1)
+All other entries are 0.
+
+
+
+**** 2. Manual Solution Attempt ****
+
+Paramedic Costs
+
+Weekdays = $250
+
+Weekends = $300
+
+EMT Costs
+
+Weekdays = $180
+
+Weekends = $220
+
+Paramedic cost
+Staff	Weekdays	Weekends	Cost
+P1	5 WD	0 WE	5×250 = 1250
+P2	5 WD	0 WE	1250
+P3	4 WD	1 WE	4×250 + 1×300 = 1300
+P4	3 WD	1 WE	3×250 + 1×300 = 1050
+
+Total Paramedic Cost = $4,850		
+
+EMT	WD	WE	Cost
+E1	4	0	4×180 = 720
+E2	4	0	720
+E3	5	0	900
+E4	5	0	900
+E5	4	1	4×180 + 1×220 = 940
+E6	5	0	900
+E7	4	1	4×180 + 1×220 = 940
+E8	4	1	4×180 + 1×220 = 940
+
+Total EMT Cost = $6,960	
+
+Grand Total Cost (Manual Attempt) -> $4850 + $6960 = $11,810
+
+**** Brief Summary ****
+
+The reasoning behind my manual calculations were based upon assigning each employee a reasonable mix of shifts while staying within the constraints of the problem. Those constraints being: no more than 5 total workdays, no more than 4 days within a rolling 5 day window, the required daily staffing total, and required daily paramedics. Working around those constraints, I calculated each person's cost based on the wage rates for paramedics ($450 weekdays and $300 weekends) and the wage rates for EMTs ($180 weekdays and $220 weekends). The manual solution I ended up with provides a baseline estimate of weekly cost that gives me something to compare at the end, next to the optimal LP model of weekly cost. 
+
+```{r}
+library(lpSolveAPI)
+
+staff <- c("P1","P2","P3","P4",
+           "E1","E2","E3","E4","E5","E6","E7","E8")
+days  <- 1:7
+
+n_staff <- length(staff)
+n_days  <- length(days)
+n_var   <- n_staff * n_days
+
+var_index <- function(s, d) {
+  i <- match(s, staff)
+  return((i - 1) * n_days + d)
+}
+
+lprec <- make.lp(0, n_var)
+
+paramedics <- c("P1","P2","P3","P4")
+obj <- rep(0, n_var)
+
+for (s in staff) {
+  for (d in days) {
+    col <- var_index(s, d)
+    is_weekend <- d %in% c(6, 7)
+    if (s %in% paramedics) {
+      obj[col] <- ifelse(is_weekend, 300, 250)
+    } else {
+      obj[col] <- ifelse(is_weekend, 220, 180)
+    }
+  }
+}
+
+set.objfn(lprec, obj)
+invisible(lp.control(lprec, sense = "min"))
+
+minStaff <- c(6, 6, 8, 8, 10, 8, 6)
+
+for (d in days) {
+  row <- rep(0, n_var)
+  for (s in staff) row[var_index(s, d)] <- 1
+  add.constraint(lprec, row, ">=", minStaff[d])
+}
+
+minParam <- c(2, 2, 3, 3, 4, 3, 2)
+
+for (d in days) {
+  row <- rep(0, n_var)
+  for (s in paramedics) row[var_index(s, d)] <- 1
+  add.constraint(lprec, row, ">=", minParam[d])
+}
+
+for (s in staff) {
+  row <- rep(0, n_var)
+  for (d in days) row[var_index(s, d)] <- 1
+  add.constraint(lprec, row, "<=", 5)
+}
+
+five_day_blocks <- list(1:5, 2:6, 3:7)
+
+for (s in staff) {
+  for (blk in five_day_blocks) {
+    row <- rep(0, n_var)
+    for (d in blk) row[var_index(s, d)] <- 1
+    add.constraint(lprec, row, "<=", 4)
+  }
+}
+
+unavailable <- list(
+  c("P1", 7),
+  c("P4", 1),
+  c("P4", 2),
+  c("E2", 6),
+  c("E2", 7),
+  c("E5", 5)
+)
+
+for (u in unavailable) {
+  row <- rep(0, n_var)
+  row[var_index(u[1], as.numeric(u[2]))] <- 1
+  add.constraint(lprec, row, "=", 0)
+}
+
+for (j in 1:n_var) set.type(lprec, j, "binary")
+
+solve_status <- solve(lprec)
+if (solve_status != 0) stop("LP did not solve successfully.")
+
+solution <- get.variables(lprec)
+
+schedule <- matrix(solution, nrow = n_staff, byrow = TRUE)
+colnames(schedule) <- c("Mon","Tue","Wed","Thu","Fri","Sat","Sun")
+rownames(schedule) <- staff
+
+print("Optimal Weekly Schedule (1 = works, 0 = off):")
+print(schedule)
+
+paramedics <- c("P1","P2","P3","P4")
+
+cost_vector <- obj
+total_cost <- sum(solution * cost_vector)
+
+print(paste("Total Minimum Cost =", total_cost))
+
+daily_staff <- colSums(schedule)
+daily_paramedics <- colSums(schedule[rownames(schedule) %in% paramedics, ])
+
+print("Total staff per day:")
+print(daily_staff)
+
+print("Paramedics per day:")
+print(daily_paramedics)
+
+```
+
+```{r}
+staff_full_names <- c(
+  "Garcia",
+  "Smith",
+  "Johnson",
+  "Williams",
+  "Brown",
+  "Jones",
+  "Miller",
+  "Davis",
+  "Wilson",
+  "Moore",
+  "Taylor",
+  "Anderson"
+)
+
+pretty_schedule <- matrix(
+  ifelse(schedule == 1, "✓", "-"),
+  nrow = nrow(schedule),
+  ncol = ncol(schedule),
+  byrow = FALSE
+)
+rownames(pretty_schedule) <- staff
+colnames(pretty_schedule) <- c("Mon","Tue","Wed","Thu","Fri","Sat","Sun")
+
+total_days <- rowSums(schedule)
+
+daily_cost_matrix <- matrix(0, nrow = length(staff), ncol = length(days))
+
+for (i in 1:length(staff)) {
+  if (staff[i] %in% paramedics) {
+    wages <- c(250, 250, 250, 250, 250, 300, 300)
+  } else {
+    wages <- c(180, 180, 180, 180, 180, 220, 220)
+  }
+  daily_cost_matrix[i, ] <- schedule[i, ] * wages
+}
+
+colnames(daily_cost_matrix) <- c(
+  "Mon_Cost","Tue_Cost","Wed_Cost",
+  "Thu_Cost","Fri_Cost","Sat_Cost","Sun_Cost"
+)
+
+cost_per_staff_numeric <- rowSums(daily_cost_matrix)
+cost_per_staff <- paste0("$", format(cost_per_staff_numeric, big.mark = ","))
+
+final_table <- data.frame(
+  Staff     = staff_full_names,
+  Mon       = pretty_schedule[,1],
+  Tue       = pretty_schedule[,2],
+  Wed       = pretty_schedule[,3],
+  Thu       = pretty_schedule[,4],
+  Fri       = pretty_schedule[,5],
+  Sat       = pretty_schedule[,6],
+  Sun       = pretty_schedule[,7],
+  Mon_Cost  = daily_cost_matrix[,1],
+  Tue_Cost  = daily_cost_matrix[,2],
+  Wed_Cost  = daily_cost_matrix[,3],
+  Thu_Cost  = daily_cost_matrix[,4],
+  Fri_Cost  = daily_cost_matrix[,5],
+  Sat_Cost  = daily_cost_matrix[,6],
+  Sun_Cost  = daily_cost_matrix[,7],
+  Total_Days = total_days,
+  Cost       = cost_per_staff,
+  stringsAsFactors = FALSE
+)
+
+daily_total <- colSums(schedule)
+
+daily_param <- colSums(schedule[rownames(schedule) %in% paramedics, , drop = FALSE])
+
+total_weekly_cost <- sum(cost_per_staff_numeric)
+
+
+cat("\n===== OPTIMAL WEEKLY SCHEDULE =====\n")
+print(final_table, quote = FALSE, row.names = FALSE)
+
+cat("\n===== DAILY TOTAL STAFF =====\n")
+print(daily_total)
+
+cat("\n===== DAILY PARAMEDICS =====\n")
+print(daily_param)
+
+cat("\n===== TOTAL WEEKLY COST =====\n")
+cat(paste0("$", format(total_weekly_cost, big.mark=",")),"\n")
+
+
+```
+
+**** Final Conclusion ****
+
+The manual schedule that I created, resulted in a total estimated weekly cost of $11,810. The optimized LP model produced a lower cost of $11,300. This $510 difference shows that while the manual approach is feasible, it is not as cost effective or optimal as the model due to my inability to account for all of the constraint and wage differences that the LP model was able to. The final cost conclusions confirms that the LP model provides a more cost effective staffing plan and is the optimal soltuion.  
